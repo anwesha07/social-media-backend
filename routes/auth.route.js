@@ -2,10 +2,12 @@ const router = require('express').Router();
 const userRepo = require('../models/User.js');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const authMiddleware = require('../middlewares/auth.middleware')
+
 
 router.get('/', (req, res)=>{
     res.json("auth route checked");
-})
+});
 
 //registration logic
 router.post('/register', async (req, res)=>{
@@ -26,7 +28,7 @@ router.post('/register', async (req, res)=>{
         res.status(500).json({error: error.message});
 
     }
-})
+});
 
 //login logic
 router.post('/login', async(req, res) => {
@@ -49,19 +51,26 @@ router.post('/login', async(req, res) => {
             // save user token
             user.token.push(token);
             await user.save();
-            console.log(user);
-
+            
             const {_id: userId, username, email} = user;
 
             res.json({ userId, username, email, token});
             return;
         }
-        // else {
-        //     //wrong password
-        //     res.status(401).json({message: "incorrect credentials"});
-        // }
     }
     res.status(401).json({message : "incorrect credentials"});
-})
+});
+
+//logout logic
+router.post('/logout', authMiddleware, async(req, res) => {
+    const userId = req.user._id;
+    const currentToken = req.headers['x-token'];
+    try{
+        const updatedUser = await userRepo.findOneAndUpdate({_id: userId}, {$pull: { token: currentToken}}, {new: true});
+        res.json();
+    }catch(err) {
+        res.json(err.message);
+    }
+});
 
 module.exports = router;
