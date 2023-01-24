@@ -1,6 +1,6 @@
 const router = require('express').Router();
-const authRouter = require('./auth');
-const userRouter = require('./user');
+const authRouter = require('./auth.route');
+const userRouter = require('./user.route');
 
 
 router.get('/', (req, res)=>{

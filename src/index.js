@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 const morgan = require('morgan');
 const helmet = require('helmet');
 
-const router = require("../routes/index.js");
+const router = require("../routes");
 
 //Connecting to db
 mongoose.set('strictQuery', false);

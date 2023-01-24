@@ -48,6 +48,7 @@ router.post('/login', async(req, res) => {
         
             // save user token
             user.token.push(token);
+            await user.save();
             console.log(user);
 
             const {_id: userId, username, email} = user;
