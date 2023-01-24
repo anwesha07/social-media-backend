@@ -1,6 +1,9 @@
 const router = require("express").Router();
 const userRepo = require('../models/User.js');
-const authMiddleware = require('../middlewares/auth.middleware')
+const bcrypt = require('bcrypt');
+const {authenticateUser: authMiddleware} = require('../middlewares/auth.middleware')
+const validateUpdateUserData = require('../middlewares/user.middleware')
+
 
 
 router.get('/me', authMiddleware, async(req, res)=>{
@@ -43,8 +46,13 @@ router.get('/', async(req, res)=>{
     }
 });
 
-router.put('/me', authMiddleware, async(req, res) => {
+router.put('/me', validateUpdateUserData, authMiddleware, async(req, res) => {
     try {
+        if(req.body.password) {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(req.body.password, salt);
+            req.body.password = hashedPassword;
+        }
         const updatedUser = await userRepo.findOneAndUpdate(
             {_id : req.user._id},
             {$set: req.body},

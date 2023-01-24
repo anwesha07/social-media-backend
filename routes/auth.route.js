@@ -2,7 +2,7 @@ const router = require('express').Router();
 const userRepo = require('../models/User.js');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const authMiddleware = require('../middlewares/auth.middleware')
+const {authenticateUser: authMiddleware, validateRegisterData, validateLoginData} = require('../middlewares/auth.middleware')
 
 
 router.get('/', (req, res)=>{
@@ -10,17 +10,15 @@ router.get('/', (req, res)=>{
 });
 
 //registration logic
-router.post('/register', async (req, res)=>{
-    console.log(req.body);
+router.post('/register', validateRegisterData, async (req, res)=>{
     try {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(req.body.password, salt);
         const user = new userRepo({
-            username : req.body.name,
-            email : req.body.email,
+            ...req.body,
             password : hashedPassword,
+
         })
-        console.log(user);
         await user.save();
         res.status(201).json({message: "user saved succesfully"});
     } catch (error) {
@@ -31,7 +29,7 @@ router.post('/register', async (req, res)=>{
 });
 
 //login logic
-router.post('/login', async(req, res) => {
+router.post('/login', validateLoginData, async(req, res) => {
     const user = await userRepo.findOne({email: req.body.email});
     if (user) {
         //if user exists, match password
@@ -51,7 +49,7 @@ router.post('/login', async(req, res) => {
             // save user token
             user.token.push(token);
             await user.save();
-            
+
             const {_id: userId, username, email} = user;
 
             res.json({ userId, username, email, token});
