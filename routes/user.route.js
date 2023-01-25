@@ -74,4 +74,68 @@ router.delete('/me', authMiddleware, async(req, res) => {
     }
 });
 
+
+router.put('/follow/:id', authMiddleware, async(req, res) => {
+    try {
+        const currentUserId = req.user._id;
+        const userId = req.params.id;
+
+        if (currentUserId == userId) {
+            res.json({message: 'You cannot follow yourself'});
+        } else {
+            const user = await userRepo.findOne({_id: userId}, {password: 0, __v: 0, token: 0});
+
+            if (user) {
+                // const updatedCurrentUser = await userRepo.findOne({_id: currentUserId}, {$push: {following: userId}}, {new: true});
+                const currentUser = await userRepo.findOne({_id: currentUserId});
+
+                if (currentUser.following.includes(userId)) res.json({message: 'user is already followed'});
+                else {
+                    await currentUser.updateOne({$push: {following: userId}});
+                    await user.updateOne({$push: {followers: currentUserId}});
+                    res.json({message: `user ${user._id} followed succesfully`});
+                }
+            } else {
+                res.json({message: 'user doesnot exist'});
+            }
+        }
+
+    } catch(err) {
+        res.json(err.message);
+    }
+});
+
+// unfollow logic
+router.put('/unfollow/:id', authMiddleware, async(req, res) => {
+    try {
+        const currentUserId = req.user._id;
+        const userId = req.params.id;
+
+        if (currentUserId == userId) {
+            res.json({message: 'You cannot unfollow yourself'});
+        } else {
+            const user = await userRepo.findOne({_id: userId}, {password: 0, __v: 0, token: 0});
+            console.log(user);
+
+            if (user) {
+                const currentUser = await userRepo.findOne({_id: currentUserId}, {password: 0, __v: 0, token: 0});
+
+                if (currentUser.following.includes(userId)) {
+                    await currentUser.updateOne({$pull: {following: userId}});
+                    await user.updateOne({$pull: {followers: currentUserId}});
+                    res.json({message: `user ${user._id} unfollowed succesfully`});
+                } else {
+                    res.json({message: 'user is not followed'});
+                }
+            } else {
+                res.json({message: 'user doesnot exist'});
+            }
+        }
+
+    } catch(err) {
+        res.json(err.message);
+    }
+});
+
+
 module.exports = router;
