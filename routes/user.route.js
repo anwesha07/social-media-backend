@@ -32,6 +32,10 @@ router.get('/:id', async(req, res)=>{
 });
 router.get('/', async(req, res)=>{
     const name = req.query.name;
+    const NUM_RESULTS_PER_PAGE = 2;
+    const pageNumber = req.query.page - 1;
+    // Take page as query param
+    // const NUM_RESULTS_PER_PAGE = 10
     try {
         const user = await userRepo.find({ username : { $regex : name, $options : 'i' } }, {
             username: 1,
@@ -39,7 +43,10 @@ router.get('/', async(req, res)=>{
             coverPicture: 1,
             followers: 1,
             following: 1
-        }).lean();
+        }).lean()
+        .skip(pageNumber * NUM_RESULTS_PER_PAGE)
+        .limit(NUM_RESULTS_PER_PAGE);
+        // Use .skip() for offset and .limit() for number of results
         res.json(user);
     } catch(err) {
         res.json({message: err.message});
