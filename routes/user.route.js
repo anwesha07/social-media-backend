@@ -1,5 +1,7 @@
+const mongoose = require('mongoose');
 const router = require("express").Router();
 const userRepo = require('../models/User.js');
+const postRepo = require('../models/Post.js');
 const bcrypt = require('bcrypt');
 const {authenticateUser: authMiddleware} = require('../middlewares/auth.middleware')
 const validateUpdateUserData = require('../middlewares/user.middleware')
@@ -143,6 +145,44 @@ router.put('/unfollow/:id', authMiddleware, async(req, res) => {
         res.json(err.message);
     }
 });
+
+// get all posts of user
+router.get('/:id/posts', async(req, res) => {
+    try {
+        const userId = req.params.id;
+        const user =  await userRepo.findOne({_id: userId}, {username: 1, profilePicture: 1}).lean();
+        if (user) {
+            // aggregate is used for multi stage query processing one by one
+            const posts = await postRepo.aggregate([
+                {
+                    $match: {
+                        author: mongoose.Types.ObjectId(userId),
+                    }
+                },
+                {
+                    $project: {
+                        description: 1,
+                        image: 1,
+                        numOfLikes: {
+                            $size: '$likes'
+                        },
+                        numOfComments: {
+                            $size: '$comments'
+                        },
+                        author: 1
+                    }
+                }
+            ]);
+            res.json({...user, posts});
+        } else {
+            res.status(404).json({message: 'user doesnot exist'});
+        }
+    } catch(err) {
+        res.status(500).json(err.message);
+    }
+
+    
+})
 
 
 module.exports = router;
