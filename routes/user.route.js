@@ -13,6 +13,84 @@ router.get('/me', authMiddleware, async(req, res)=>{
     console.log(req.user);
     res.json(req.user);
 });
+
+//authenticate user
+router.post('/verify', authMiddleware, async(req, res) => {
+    res.status(200).json(req.user);
+})
+
+// get timeline of user
+
+router.get('/timeline', authMiddleware, async (req, res) => {
+    try {
+        const NUM_POSTS_PER_PAGE = 10;
+        const page = req.query.page || 1;
+        const nextPage = page + 1;
+        console.log(req.query.page);
+        const id_Array = [...req.user.following, req.user._id.toString()]; // array spreading
+        const totalPostCount = await postRepo.count({
+            author: { $in: id_Array.map((id) => mongoose.Types.ObjectId(id)) }
+        })
+        const hasNextPage = totalPostCount - (page * NUM_POSTS_PER_PAGE) > 0;
+        const posts = await postRepo.aggregate([
+            {
+                $match: {
+                    author: {
+                        $in: id_Array.map((id) => mongoose.Types.ObjectId(id)),
+                    } 
+                }
+            },
+            {
+                $project: {
+                    description: 1,
+                    image: 1,
+                    numOfLikes: {
+                        $size: '$likes'
+                    },
+                    numOfComments: {
+                        $size: '$comments'
+                    },
+                    author: 1,
+                    createdAt: 1
+                }
+            },
+            // {
+            //     $lookup: {
+            //         from: "userRepo",
+            //         localField: "author",
+            //         foreignField: "_id",
+            //         as: "postauthor",
+
+                    
+            //     }
+            // },
+            {
+                $sort: {
+                    createdAt: -1
+                }
+            },
+            {
+                $skip:( page - 1) * NUM_POSTS_PER_PAGE
+            },
+            {
+                $limit: NUM_POSTS_PER_PAGE
+            },
+        ]);
+        await userRepo.populate(posts, {
+            path: 'author',
+            select: {
+                username: 1,
+                profilePicture: 1
+            }
+        })
+        res.json({posts, hasNextPage});
+    } catch(error) {
+        console.log(error);
+        res.status(500).json({message: error.message});
+    }
+})
+
+// get a user by id 
 router.get('/:id', async(req, res)=>{
     const userId = req.params.id;
     try {
@@ -32,10 +110,12 @@ router.get('/:id', async(req, res)=>{
         res.status(500).json({message: err.message});
     }
 });
+
+// search user by username
 router.get('/', async(req, res)=>{
     const name = req.query.name;
     const NUM_RESULTS_PER_PAGE = 2;
-    const pageNumber = req.query.page - 1;
+    const page = req.query.page || 1;
     // Take page as query param
     // const NUM_RESULTS_PER_PAGE = 10
     try {
@@ -46,7 +126,7 @@ router.get('/', async(req, res)=>{
             followers: 1,
             following: 1
         }).lean()
-        .skip(pageNumber * NUM_RESULTS_PER_PAGE)
+        .skip((page - 1) * NUM_RESULTS_PER_PAGE)
         .limit(NUM_RESULTS_PER_PAGE);
         // Use .skip() for offset and .limit() for number of results
         res.json(user);
@@ -179,10 +259,7 @@ router.get('/:id/posts', async(req, res) => {
         }
     } catch(err) {
         res.status(500).json(err.message);
-    }
-
-    
+    }    
 })
-
 
 module.exports = router;

@@ -18,6 +18,14 @@ const userSchema = new mongoose.Schema({
         min : 8,
 
     },
+    dateOfBirth: {
+        type: String,
+        required: true,
+    },
+    description: {
+        type: String,
+        default: '',
+    },
     profilePicture : {
         type: String,
         default : '',

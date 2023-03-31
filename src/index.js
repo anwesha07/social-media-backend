@@ -1,12 +1,16 @@
 const express = require('express');
+
 const app = express();
 
+// to store and use env variables in .env file
 const dotenv = require('dotenv');
 dotenv.config();
 
 const mongoose = require('mongoose');
 const morgan = require('morgan');
 const helmet = require('helmet');
+const cors = require('cors');
+
 
 const router = require("../routes");
 
@@ -25,16 +29,35 @@ database.once('connected', ()=> {
     console.log('Database Connected')
 })
 
-//global middlewares
-app.use(express.json()); // to access the req.body as json
+// global middlewares
+app.use(cors());
+app.use(express.json()); // to parse the req.body as json object
 app.use(helmet()); 
 // app.use(morgan("common")); //logging req
+
+
+
+// helmet({ crossOriginResourcePolicy: false, })
+// app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
+// app.use(
+//     helmet({
+//       crossOriginResourcePolicy: false,
+//     })
+//   );
+
+
+
+
+
+app.use('/public',express.static('public')) // for rendering the public folder statically
+
+
 
 
 //routes
 app.get('/', (req, res) => {
     // res.send('Hello World');
-    res.send({ message: 'Hello World' });
+    res.send({ message: 'Welcome' });
     console.log('ok');
 });
 app.use('/api', router);
