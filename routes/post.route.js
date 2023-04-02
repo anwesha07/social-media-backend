@@ -132,11 +132,11 @@ router.put('/:id/like',authMiddleware, async(req, res) => {
         const userId = req.user._id;
         if (req.post.likes.includes(userId)) {
             await req.post.updateOne({$pull: {likes: req.user._id}});
-            res.json({message: `post unliked by user ${req.user._id}`});
+            res.json({postLiked: false, message: `post unliked by user ${req.user._id}`});
 
         } else {
             await req.post.updateOne({$push: {likes: req.user._id}});
-            res.json({message: `post liked by user ${req.user._id}`});
+            res.json({postLiked: true, message: `post liked by user ${req.user._id}`});
         }
     } catch(err) {
        res.status(500).json({message: err.message})       
