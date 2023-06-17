@@ -43,6 +43,8 @@ app.use("/api", router);
 
 app.use(globalErrorHandler);
 
-app.listen(8000, () => {
-  console.log("Server started at port 8000");
+const PORT = Number(process.env.PORT) || 8000;
+
+app.listen(PORT, () => {
+  console.log(`Server started at port ${PORT}`);
 });
